@@ -25,6 +25,7 @@
 - 🀄 **一键中文版**：原文 ↔ 纯中文原地切换，译文 PDF 一键导出（纯中文 / 中英对照），翻译引擎零预装自动安装
 - 🈯 **划词翻译（公式保留）**（v1.5.1）：选中点「译」出纯译文气泡；选区含公式时用 MinerU 识别的 LaTeX 替换文本层乱码、要求模型原样保留
 - 🖥️ **中英对照 / 分屏**（v1.5.1）：并排对照页或左右分屏同步滚动，随时切换、按文献记忆
+- 📖 **精读（子代理并行生成）**：阅读器右侧一列——逐段中文翻译、每节概括 / 总结 / 批判点评、高中生版讲解、原文重点句与重点图（在原文上标出）；点任一条即在左侧原文定位。扫描书（隐形 OCR 层、左右跨页、页眉页码）同样可用
 - 🗂️ **文献管理**：专题/论文改名、删除进回收站可恢复
 - ➕ **可选增强**（默认关）：MinerU 解析——扫描件可读、公式可点引用可检索；嵌入端点——大白话命中术语段落
 
@@ -70,7 +71,7 @@ dsh plugin --profile web add @ggboy123/dsh-paper-reader@latest   # 升级也是�
 
 ## 文献管理（安全说明）
 
-- 删除 = **移入回收站** `data/.trash/`（带 manifest，移回即恢复）；会处理该文献的全部产物：`<文献>.pdf`、`.txt`、`.pages.json`、`.transcript.json`、`.mineru.md`、`.mineru.json`、`.embeddings.json`、`.study.json` 与译文变体 `<文献>-en.pdf` / `-zh.pdf` / `-dual.pdf`（含 `.tmp-*` 残留）；伴读会话历史不删。运行中会话/翻译中的文献会被前置拒绝；路径穿越一律拒绝、失败自动回滚——细则见 [docs/features.md](docs/features.md)
+- 删除 = **移入回收站** `data/.trash/`（带 manifest，移回即恢复）；会处理该文献的全部产物：`<文献>.pdf`、`.txt`、`.pages.json`、`.transcript.json`、`.mineru.md`、`.mineru.json`、`.embeddings.json`、`.study.json`、`.digest.json` 与译文变体 `<文献>-en.pdf` / `-zh.pdf` / `-dual.pdf`（含 `.tmp-*` 残留）；伴读会话历史不删。运行中会话/翻译中的文献会被前置拒绝；路径穿越一律拒绝、失败自动回滚——细则见 [docs/features.md](docs/features.md)
 
 ## 参与开发
 

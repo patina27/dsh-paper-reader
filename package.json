@@ -19,6 +19,7 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
+    "./digest-agent": "./dist/digest-agent.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },

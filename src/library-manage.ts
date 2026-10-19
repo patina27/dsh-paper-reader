@@ -186,7 +186,8 @@ export function resolveExistingTopicDir(dataDir: string, topic: unknown): string
 // （t4 评审 F1）。少它的后果：① 改名后档案仍挂旧名 → readStudy 找不到，用户以为进度全丢；
 // ② 删除时不进回收站、moved/skipped 都不报告；③ 残留条目既不是文献也不是专题，任何 API 都
 // 清不掉，永久阻塞删专题（409 topic-not-empty）。本次归位：改名连带、删除移入回收站。
-export const PAPER_STEM_SUFFIXES = ['.pdf', '.txt', '.pages.json', '.transcript.json', '.mineru.md', '.mineru.json', '.embeddings.json', '.study.json'] as const
+// `.digest.json` = 精读产物（段落抽取 + 逐段译文 + 分节点评，src/digest.ts）：派生产物，随文献改名/进回收站。
+export const PAPER_STEM_SUFFIXES = ['.pdf', '.txt', '.pages.json', '.transcript.json', '.mineru.md', '.mineru.json', '.embeddings.json', '.study.json', '.digest.json'] as const
 export const PDF2ZH_VARIANT_SUFFIXES = ['-en', '-zh', '-dual'] as const
 /** atomicTempPath(): `${path}.tmp-${pid}-${uuid.slice(0,8)}`（src/transcribe.ts）。 */
 const TMP_RE = /\.tmp-\d+-[0-9a-f]{8}$/

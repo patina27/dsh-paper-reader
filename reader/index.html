@@ -177,6 +177,111 @@
   #cfg-cancel { background: none; border: none; color: var(--text-2); cursor: pointer; }
 
   #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: rgba(30,30,30,.92); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; display: none; z-index: 99; max-width: 70%; }
+  /* ---------- 紧凑顶栏：一行放下 ----------
+     路径与版本号收进标题的悬停提示（点标题仍可复制路径）；对照/分屏/公式/适宽只留图标
+     （按钮本身照旧可见/置灰，状态机不变，title 说明用途）。 */
+  #bar { padding: 5px 8px; gap: 4px; row-gap: 4px; }
+  #bar .tbtn { height: 26px; padding: 0 7px; }
+  /* #bar 前缀：盖过既有的 `#bar button { font: inherit }`（简写会把 font-size 一并继承回来） */
+  #bar #zoom-fit { font-size: 0; gap: 0; padding: 0 6px; }
+  #bar { position: relative; }
+  #bar-menu { display: none; position: absolute; right: 8px; top: calc(100% + 4px); z-index: 40; flex-direction: column; align-items: stretch;
+    min-width: 168px; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.14); }
+  #bar-menu.on { display: flex; }
+  #bar #bar-menu .tbtn { justify-content: flex-start; width: 100%; height: 30px; border: none; border-radius: 6px; padding: 0 8px; gap: 8px; }
+  #bar #bar-menu .tbtn[data-label]::after { content: attr(data-label); }
+  #bar-more.on { background: var(--accent-soft); color: var(--accent); }
+  #pdf-path, #ver { display: none !important; }
+  #status { flex: 1 1 60px; color: var(--text); font-weight: 500; cursor: pointer; }
+  #bar .spacer { display: none; }
+  #zoom-label { min-width: 34px; font-size: 12px; }
+  #page-input { width: 2.8em; }
+  /* ---------- 精读面板（逐段翻译 / 概括·总结·点评 / 高中生版 / 重点）----------
+     与 PDF 并排的一列（不是浮层）：左原文、右精读。宽度可拖，记在 localStorage。 */
+  #dg-resizer { flex: none; width: 6px; cursor: col-resize; display: none; background: transparent; border-left: 1px solid var(--border); }
+  #dg-resizer:hover, #dg-resizer.drag { background: var(--accent-soft); }
+  /* max-width：PDF 列至少留 200px（窄 iframe 里面板被拖宽/窗口变窄时不会把自己挤出可视区） */
+  #dg-panel { flex: none; display: none; flex-direction: column; min-width: min(300px, 100%); max-width: calc(100% - 200px); background: var(--panel); min-height: 0; }
+  #main.dg-on #dg-panel { display: flex; }
+  #main.dg-on #dg-resizer { display: block; }
+  #dg-head { flex: none; padding: 0 10px; border-bottom: 1px solid var(--border); position: relative; }
+  /* 一行标签 + ⋯；状态/进度只在有事可说时出现（#dg-note 为空即隐藏） */
+  #dg-tabs { display: flex; align-items: stretch; gap: 0; }
+  #dg-tabs button { flex: 0 1 auto; min-width: 0; border: none; background: none; padding: 9px 8px 8px; font: inherit; font-size: 12.5px; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dg-tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  #dg-tabs #dg-more { margin-left: auto; flex: none; font-size: 15px; line-height: 1; padding: 6px 6px 8px; letter-spacing: 1px; }
+  #dg-tabs #dg-more.on { color: var(--accent); }
+  #dg-opts { display: none; position: absolute; right: 8px; top: 36px; z-index: 5; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); font-size: 12.5px; color: var(--text); }
+  #dg-opts.on { display: flex; }
+  #dg-opts label { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+  #dg-opts .dg-link { align-self: flex-start; margin-top: 2px; }
+  #dg-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); padding: 0 2px 6px; }
+  #dg-note:has(#dg-status:empty) { display: none; }
+  #dg-status { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dg-link { flex: none; border: none; background: none; padding: 0; font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; }
+  .dg-link:hover { text-decoration: underline; }
+  .dg-link:disabled { color: var(--text-2); cursor: default; text-decoration: none; }
+  .dg-btn { height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); cursor: pointer; font: inherit; font-size: 12.5px; }
+  .dg-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #dg-progress { height: 2px; background: transparent; margin: 0 -10px; overflow: hidden; display: none; }
+  #dg-bar { height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+  #dg-body { flex: 1 1 auto; overflow: auto; padding: 2px 14px 40px; font-size: 13.5px; line-height: 1.7; }
+  .dg-sec { margin: 16px 0 4px; }
+  .dg-sec + .dg-sec { padding-top: 12px; border-top: 1px solid var(--border); }
+  .dg-sec-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .dg-sec-h h3 { margin: 0; font-size: 14px; }
+  .dg-pages { font-size: 11.5px; color: var(--text-2); }
+  .dg-chip { font-size: 11px; color: var(--text-2); }
+  .dg-chip.run { color: var(--accent); }
+  .dg-para { margin: 2px -8px; padding: 4px 8px; border-radius: 6px; cursor: pointer; border-left: 2px solid transparent; }
+  .dg-para:hover { background: var(--bg); }
+  .dg-para.focus { border-left-color: rgba(255,140,0,.9); background: rgba(255,196,0,.10); }
+  .dg-para.heading .dg-zh { font-weight: 600; }
+  .dg-para .dg-zh.pending { color: var(--text-2); font-style: italic; }
+  .dg-para .dg-orig { display: none; margin-top: 3px; font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
+  #dg-body.show-orig .dg-para .dg-orig, .dg-para.open .dg-orig { display: block; }
+  .dg-meta { font-size: 11px; color: var(--text-2); }
+  /* 文字块：不再套卡片边框，只用小标题分段 */
+  .dg-card { margin: 4px 0 8px; }
+  .dg-card h4 { margin: 10px 0 2px; font-size: 11.5px; color: var(--text-2); font-weight: 600; letter-spacing: .02em; }
+  .dg-card h4:first-child { margin-top: 2px; }
+  .dg-card p { margin: 0 0 4px; white-space: pre-wrap; }
+  .dg-card ul { margin: 0; padding-left: 18px; }
+  .dg-overview { background: var(--bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 4px; }
+  .dg-hl-item { display: block; width: 100%; text-align: left; border: none; border-left: 2px solid rgba(0,150,140,.6); border-radius: 0 6px 6px 0; background: none; padding: 3px 8px 3px 10px; margin: 8px 0; cursor: pointer; font: inherit; color: var(--text); line-height: 1.6; }
+  .dg-hl-item:hover { background: var(--bg); }
+  .dg-hl-item q { display: block; font-style: italic; quotes: "“" "”"; }
+  .dg-hl-item .why { display: block; font-size: 12.5px; color: var(--text-2); margin-top: 1px; }
+  .dg-hl-item.fig { border-left-color: rgba(124,77,255,.6); }
+  .dg-empty { color: var(--text-2); font-size: 13px; margin: 16px 0; line-height: 1.8; }
+  .dg-empty .dg-btn { margin: 8px 6px 0 0; }
+  .dg-errs { font-size: 12px; color: #b35900; margin: 8px 0; }
+  .dg-errs summary { cursor: pointer; }
+  /* ---------- 对话标签：同一个伴读会话（SSE 跟随），输入框贴底 ---------- */
+  #dg-chat { display: none; flex: 1 1 auto; min-height: 0; flex-direction: column; }
+  #dg-panel.chat #dg-chat { display: flex; }
+  #dg-panel.chat #dg-body { display: none; }
+  #ch-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 6px 14px 2px; font-size: 12px; color: var(--text-2); }
+  #ch-list { flex: 1 1 auto; overflow: auto; padding: 4px 14px 12px; font-size: 13.5px; line-height: 1.7; }
+  .ch-msg { margin: 10px 0; }
+  .ch-msg.user { margin-left: 18%; background: var(--accent-soft); border-radius: 10px; padding: 6px 10px; }
+  .ch-msg.user .ch-quote { font-size: 12px; color: var(--text-2); border-left: 2px solid var(--border); padding-left: 6px; margin-bottom: 4px; max-height: 4.8em; overflow: hidden; }
+  .ch-msg.assistant .ch-text { white-space: normal; }
+  .ch-msg .ch-tools { font-size: 11.5px; color: var(--text-2); margin-bottom: 2px; }
+  .ch-msg a { color: var(--accent); text-decoration: none; }
+  .ch-msg a:hover { text-decoration: underline; }
+  .ch-msg code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--bg); padding: 0 3px; border-radius: 3px; }
+  .ch-busy { font-size: 12px; color: var(--text-2); margin: 6px 0; }
+  .ch-empty { color: var(--text-2); font-size: 13px; margin: 16px 0; line-height: 1.8; }
+  #ch-compose { flex: none; display: flex; gap: 6px; align-items: flex-end; padding: 8px 10px 10px; border-top: 1px solid var(--border); }
+  #ch-input { flex: 1 1 auto; resize: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 13px; max-height: 140px; background: var(--panel); color: var(--text); }
+  #ch-input:focus { outline: none; border-color: var(--accent); }
+  #ch-send { height: 32px; }
+  /* PDF 上的精读高亮：与用户自己 PDF 里的黄色批注区分开，用青绿色底；图表说明用虚线框；聚焦段落用橙色 */
+  .dgLayer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  .dgLayer .dg-hlr { position: absolute; background: rgba(0, 170, 160, .22); border-bottom: 2px solid rgba(0, 150, 140, .75); border-radius: 2px; }
+  .dgLayer .dg-figr { position: absolute; outline: 2px dashed rgba(124, 77, 255, .75); border-radius: 3px; }
+  .dgLayer .dg-focr { position: absolute; background: rgba(255, 160, 0, .18); outline: 1.5px solid rgba(255, 140, 0, .8); border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -184,29 +289,36 @@
 <div id="bar">
   <span id="status">论文伴读</span>
   <button id="pdf-path" style="display:none" title="点击复制文件路径"></button>
-  <button id="zh-toggle" class="tbtn" title="切换中文译文（没有译文时可生成）" style="display:none" data-icon="translate"></button>
-  <button id="dual-toggle" class="tbtn" title="用 babeldoc 的中英对照 PDF（模式 A）" style="display:none" data-icon="columns">对照</button>
-  <button id="split-toggle" class="tbtn" title="原文与中文版并排同步滚动（模式 B）" style="display:none" data-icon="split">分屏</button>
-  <!-- 「同步滚动」开关（模式 B 的全局偏好）：分屏控件旁，只在分屏下可见（模式 A/原文/译文都没有两个滚动条）。
-       状态换图标（sync / syncOff，与 mode-toggle 的 paged/scroll 同法）+ title 里 zh/en 说明状态；
-       与设置面板里的同一项共用 dpr.syncScroll 键、互相同步。 -->
-  <button id="sync-toggle" class="tbtn" title="同步滚动 / Sync scroll：开（两列一起滚，点击关闭）" style="display:none" data-icon="sync"></button>
-  <button id="zh-regen" class="tbtn" title="重新翻译：删除现有译文，用当前端点重跑（换模型后用）" style="display:none" data-icon="regen"></button>
-  <button id="dl-btn" class="tbtn" title="下载 PDF" style="display:none" data-icon="download"></button>
   <span class="spacer"></span>
-  <button id="mode-toggle" class="tbtn" title="切换 滚动/翻页模式" style="display:none" data-icon="paged"></button>
   <span id="pager" style="display:none">
     <button id="page-prev" class="tbtn" title="上一页" data-icon="prev"></button>
     <input id="page-input" type="text" inputmode="numeric" title="页码，回车跳转">
     <span id="page-total">/ ?</span>
     <button id="page-next" class="tbtn" title="下一页" data-icon="next"></button>
   </span>
-  <button id="cfg-open" class="tbtn" title="翻译端点设置" data-icon="settings"></button>
   <button id="zoom-out" class="tbtn" title="缩小" data-icon="minus"></button>
   <span id="zoom-label">100%</span>
   <button id="zoom-in" class="tbtn" title="放大" data-icon="plus"></button>
-  <button id="zoom-fit" class="tbtn">适宽</button>
+  <button id="zoom-fit" class="tbtn" title="适宽：按面板宽度缩放" data-icon="fit">适宽</button>
+  <button id="chat-dock" class="tbtn" title="对话：收进精读面板的「对话」标签（默认）/ 恢复右侧的原生对话栏" data-icon="chat"></button>
+  <button id="dg-toggle" class="tbtn" title="精读：逐段翻译 / 分节概括·总结·点评 / 高中生版讲解 / 重点句与图（子代理并行生成）" data-icon="book">精读</button>
+  <button id="bar-more" class="tbtn" title="更多：中文版 / 对照 / 分屏 / 下载 / 翻页模式 / 翻译设置 / 公式" data-icon="more"></button>
+  <!-- 「更多」菜单：不常用的按钮整组收进来（id / 事件 / 置灰与 title 状态机全部不变，只是换了位置）。
+       用 <span> 包：#sync-toggle 仍紧跟 #split-toggle、中间没有 <div，且仍在 #bar 内。 -->
+  <span id="bar-menu">
+  <button id="zh-toggle" class="tbtn" data-label="中文版" title="切换中文译文（没有译文时可生成）" style="display:none" data-icon="translate"></button>
+  <button id="dual-toggle" class="tbtn" title="用 babeldoc 的中英对照 PDF（模式 A）" style="display:none" data-icon="columns">对照</button>
+  <button id="split-toggle" class="tbtn" title="原文与中文版并排同步滚动（模式 B）" style="display:none" data-icon="split">分屏</button>
+  <!-- 「同步滚动」开关（模式 B 的全局偏好）：分屏控件旁，只在分屏下可见（模式 A/原文/译文都没有两个滚动条）。
+       状态换图标（sync / syncOff，与 mode-toggle 的 paged/scroll 同法）+ title 里 zh/en 说明状态；
+       与设置面板里的同一项共用 dpr.syncScroll 键、互相同步。 -->
+  <button id="sync-toggle" class="tbtn" data-label="同步滚动" title="同步滚动 / Sync scroll：开（两列一起滚，点击关闭）" style="display:none" data-icon="sync"></button>
+  <button id="zh-regen" class="tbtn" data-label="重新翻译" title="重新翻译：删除现有译文，用当前端点重跑（换模型后用）" style="display:none" data-icon="regen"></button>
+  <button id="dl-btn" class="tbtn" data-label="下载 PDF" title="下载 PDF" style="display:none" data-icon="download"></button>
+  <button id="mode-toggle" class="tbtn" data-label="滚动 / 翻页" title="切换 滚动/翻页模式" style="display:none" data-icon="paged"></button>
+  <button id="cfg-open" class="tbtn" data-label="翻译设置" title="翻译端点设置" data-icon="settings"></button>
   <button id="eq-toggle" class="tbtn" title="公式引用（MinerU LaTeX）" data-icon="sigma">公式</button>
+  </span>
   <span id="ver" title="插件版本">__DPR_VERSION__</span>
 </div>
 
@@ -222,6 +334,36 @@
       <div id="pdf-pages-zh"></div>
     </div>
   </div>
+  <div id="dg-resizer" title="拖动调整宽度"></div>
+  <aside id="dg-panel">
+    <div id="dg-head">
+      <div id="dg-tabs">
+        <button data-tab="tr" class="active" title="每个段落的中文译文；点段落在左侧原文定位，再点一次展开原文">译文</button>
+        <button data-tab="an" title="全文总览 + 每节的概括、要点总结与批判点评">概括·点评</button>
+        <button data-tab="hs" title="用高中生听得懂的话讲解每个大节">高中生版</button>
+        <button data-tab="hl" title="原文最重要的句子与图表（左侧以青绿色标出），点一条定位">重点</button>
+        <button data-tab="ch" title="与这篇文献对话（就是右侧原生对话栏里的同一个伴读会话）；在原文里划词提问的回答也在这里">对话</button>
+        <button id="dg-more" title="选项">⋯</button>
+      </div>
+      <div id="dg-opts">
+        <label><input type="checkbox" id="dg-showorig">译文下显示原文</label>
+        <label><input type="checkbox" id="dg-showhl" checked>在原文上标出重点</label>
+        <label><input type="checkbox" id="dg-follow" checked>跟随原文滚动</label>
+        <button id="dg-regen" class="dg-link" title="清掉已有结果，用当前模型全部重新生成">全部重新生成…</button>
+      </div>
+      <div id="dg-note"><span id="dg-status"></span><button id="dg-gen" class="dg-link" style="display:none">生成精读</button><button id="dg-stop" class="dg-link" style="display:none">停止</button></div>
+      <div id="dg-progress"><div id="dg-bar"></div></div>
+    </div>
+    <div id="dg-body"></div>
+    <div id="dg-chat">
+      <div id="ch-head"><span id="ch-title">伴读会话</span><button id="ch-new" class="dg-link" title="开一个新的伴读会话（旧会话在原生对话栏的历史里）">新对话</button></div>
+      <div id="ch-list"></div>
+      <div id="ch-compose">
+        <textarea id="ch-input" rows="2" placeholder="问这篇文献…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button id="ch-send" class="dg-btn primary" title="发送">发送</button>
+      </div>
+    </div>
+  </aside>
   <div id="eq-panel">
     <h3>公式</h3>
     <div id="eq-meta"></div>
@@ -276,6 +418,10 @@ const $ = (id) => document.getElementById(id);
 /* 顶栏图标：统一的 24×24 描边图标集（stroke=currentColor，active/disabled 变色自动跟随按钮）。
    曾经混用 Unicode 字符（↻/⤓/▣/⚙/＋…）——各自渲染自不同字体，粗细、大小、基线互不一致。 */
 const ICONS = {
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  fit: '<path d="M21 12H3"/><path d="m7 8-4 4 4 4"/><path d="m17 8 4 4-4 4"/>',
+  book: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
   translate: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
   regen: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
@@ -317,6 +463,20 @@ function toast(msg, ms = 3200) {
 function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
 // 路径复制：与「复制 LaTeX」共用同一个 copyText（剪贴板写入只有一处实现，见文件末尾定义）
+$('status').onclick = () => { if (current) $('pdf-path').onclick(); };
+// 顶栏「更多」菜单：点按钮开合；点菜单外或点了菜单里的某一项（各自的 onclick 照常执行）后收起
+$('bar-more').onclick = (e) => {
+  e.stopPropagation();
+  const on = !$('bar-menu').classList.contains('on');
+  $('bar-menu').classList.toggle('on', on);
+  $('bar-more').classList.toggle('on', on);
+};
+document.addEventListener('click', (e) => {
+  if (!e.target || !e.target.closest || e.target.closest('#bar-more')) return;
+  if (e.target.closest('#bar-menu') && !e.target.closest('button')) return;
+  $('bar-menu').classList.remove('on');
+  $('bar-more').classList.remove('on');
+});
 $('pdf-path').onclick = async () => {
   const p = $('pdf-path').textContent;
   if (!p) return;
@@ -358,10 +518,10 @@ async function openPaper(topic, name, opts = {}) {
   $('status').textContent = '加载 PDF…';
   const q = `topic=${encodeURIComponent(topic)}&name=${encodeURIComponent(name)}`;
   const meta = await api('/paper?' + q);
-  statusMeta = meta.hasTranscript
-    ? `${name} · ${meta.pageCount ?? '?'} 页`
-    : `${name} · 未转录（提问时会自动转录）`;
+  // 标题只放文献名（页数在翻页器里、转录状态对读者无意义）；路径与版本收进悬停提示
+  statusMeta = name;
   $('status').textContent = statusMeta;
+  $('status').title = [name, meta.pdfPath, $('ver').textContent].filter(Boolean).join('\n') + '\n（点击复制文件路径）';
   // 文件路径展示（点击复制）：独立于 #status，翻译阶段的 phase 覆写不影响它
   const pathBtn = $('pdf-path');
   pathBtn.textContent = meta.pdfPath || '';
@@ -380,6 +540,7 @@ async function openPaper(topic, name, opts = {}) {
   // 按 eqIndex 铺的，先渲染会漏画/残留上一篇的矩形；又必须排在 zhVariant 定稿之后——
   // eqHotEnabled()/renderEqPanel() 都按 zhVariant 决定「译文视图关热区」。失败不影响打开文献。
   await loadFormulas();
+  if (dgReady) loadDigest(); // 不 await：精读数据可能较大，不阻塞 PDF 首屏；到货后 repaintDigestLayers 补铺
   updateDlBtn();
   updateViewButtons();
   if (viewMode === 'split') {
@@ -697,6 +858,10 @@ $('cfg-save').onclick = async () => {
 /* pdf.js 6.x 本地 vendor：动态 import（缓存的 Promise），loadPdf 先 await 再用——
    底部经典脚本解析期就开跑 bootstrap()，必须由这里保证「pdf.js 就绪后才渲染」；
    失败（vendor 404 / MIME 拒绝）抛带 URL 的可读错误，而不是莫名其妙的 ReferenceError。 */
+// 图像解码器（JBIG2 / JPEG2000 / ICC 色彩）的 wasm：pdf.js 6 起不内置，缺了它扫描书（几乎都是 JBIG2
+// 黑白图或 JPX 彩图）只剩文字层和批注、底图一片空白。随 vendor 一起本地提供（与 pdf.min.mjs 同版本）。
+// 用绝对路径字符串（不调 new URL(location)：测试的假环境里没有 location）；worker 内按同源解析
+const PDFJS_WASM = { wasmUrl: '/paper-reader/vendor/' };
 let pdfjsReadyP = null;
 function ensurePdfjs() {
   if (!pdfjsReadyP) {
@@ -733,7 +898,7 @@ let renderToken = 0;
 
 async function loadPdf(url, opts = {}) {
   await ensurePdfjs(); // 就绪前禁止触 pdfjsLib（defer 竞态，见文件头注释）
-  pdfDoc = await pdfjsLib.getDocument({ url }).promise; // v6 起不接受字符串参数，必须传对象
+  pdfDoc = await pdfjsLib.getDocument({ url, ...PDFJS_WASM }).promise; // v6 起不接受字符串参数，必须传对象
   $('empty').style.display = 'none';
   // 翻页控件与模式切换按钮：文档就绪后才出现
   $('pager').style.display = '';
@@ -794,6 +959,8 @@ async function paintPage(page, div, viewport, token) {
   // 少了这一行，被抢占的收尾会把**上一档缩放**的几何写回 EQ_BY_PAGE → 点击热区整体偏移。
   if (token !== renderToken) return;
   paintEqLayer(div, viewport, +div.dataset.page);
+  // 精读高亮层是附加物：任何异常都不得打断 PDF 渲染循环
+  try { paintDigestLayer(div, viewport, +div.dataset.page); } catch (err) { console.warn('[dpr] 精读高亮层绘制失败', err); }
 }
 
 /** 当前模式的全量重渲入口：缩放/DPR/换文档/换变体统一走这里。
@@ -933,6 +1100,7 @@ function updatePager() {
   if (document.activeElement !== input) input.value = total ? curPage : '';
   $('page-prev').disabled = pageMode === 'paged' && curPage <= 1;
   $('page-next').disabled = pageMode === 'paged' && curPage >= total;
+  dgFollow();
 }
 
 /** 跳到第 n 页（夹取）：paged 重渲单页+闪烁；scroll 平滑滚到该页。 */
@@ -1495,6 +1663,7 @@ $('ask-send').onclick = async () => {
     });
     askPop.style.display = 'none';
     toast(askSelection.kind === 'equation' ? `已引用公式并发送到 会话${r.n}` : `已发送到 会话${r.n}，回答见对话区`);
+    dgAfterAsk(r.n);
   } catch (e) { toast('提问失败：' + e.message, 6000); }
   $('ask-send').disabled = false;
 };
@@ -2213,7 +2382,7 @@ async function openSplit() {
   $('mode-toggle').style.display = '';
   if (pdfDocZh) { try { await pdfDocZh.destroy?.(); } catch { /* 旧文档已释放 */ } pdfDocZh = null; }
   try {
-    pdfDocZh = await pdfjsLib.getDocument({ url: pdfUrl('zh') }).promise;
+    pdfDocZh = await pdfjsLib.getDocument({ url: pdfUrl('zh'), ...PDFJS_WASM }).promise;
   } catch (e) {
     // -zh.pdf 拿不到（被删/损坏）：回落原文 + 如实提示，不静默失败
     await setViewMode('orig');
@@ -2252,6 +2421,640 @@ function attachSplitScroll() {
     col.pane.onscroll = () => { splitLeadPane = col.pane; onSplitScroll(col); };
   });
 }
+
+/* ================= 精读（逐段翻译 / 概括·总结·点评 / 高中生版 / 重点） =================
+   数据在服务端 <文献>.digest.json：段落 + 行级坐标（PDF 用户空间）+ 子代理生成的结果。
+   打开文献时取一次全量（GET /digest），生成期间只轮询结果（GET /digest/state）。
+   原文上的高亮用 viewport.convertToViewportRectangle 换算，与缩放/翻页无关；只铺在原文列。 */
+// var（不是 let/const）：顶层的 updateModeToggle() → updatePager() → dgFollow() 在本段脚本执行前就会跑到，
+// const 在那时处于暂时性死区，一碰就 ReferenceError 白屏；用提升的 var 标志位守住入口。
+var dgReady = false;
+const dg = {
+  data: null,        // 全量（含 doc.paragraphs）；没有精读时为 null
+  state: null,       // outline / analyses / translations / overview / job / live
+  paraById: new Map(),
+  tab: localStorage.getItem('dpr.dgTab') || 'tr',
+  poll: null,
+  loadSeq: 0,
+  error: null,
+  renderKey: '',
+  openPids: new Set(),
+  lastPanelAction: 0,
+};
+let dgFocus = null; // { pid, s, e }：面板里点中的段落/重点句，在原文上以橙色框出
+const dgOpen = () => $('main').classList.contains('dg-on');
+const dgQ = () => `topic=${encodeURIComponent(current.topic)}&name=${encodeURIComponent(current.name)}`;
+const dgEsc = (s) => esc(String(s ?? '')).replace(/\n/g, '<br>');
+
+async function loadDigest() {
+  const seq = ++dg.loadSeq;
+  // 换了文献：断开上一篇的会话流（「对话」标签可见时 renderDigest → chEnsure 会连上新的）
+  if (ch.key && current && ch.key !== current.topic + '/' + current.name) { chDisconnect(); ch.n = null; ch.fresh = false; }
+  dg.data = null; dg.state = null; dg.paraById = new Map(); dg.error = null; dg.renderKey = ''; dg.openPids.clear();
+  dgFocus = null;
+  stopDgPoll();
+  renderDigest();
+  if (!current) return;
+  let d;
+  try { d = await api('/digest?' + dgQ()); } catch (e) {
+    if (seq === dg.loadSeq) { dg.error = e.message; renderDigest(); }
+    return;
+  }
+  if (seq !== dg.loadSeq) return;
+  if (d && d.exists) {
+    dg.data = d;
+    dg.state = { outline: d.outline, analyses: d.analyses || {}, translations: d.translations || {}, overview: d.overview, needsTranslation: d.needsTranslation, job: d.job, live: d.live };
+    dg.paraById = new Map(d.doc.paragraphs.map((p, i) => [p.id, Object.assign({ idx: i }, p)]));
+    if (d.live) startDgPoll();
+  }
+  dg.renderKey = '';
+  renderDigest();
+  repaintDigestLayers();
+}
+
+function startDgPoll() { if (!dg.poll) dg.poll = setInterval(pollDigest, 2500); }
+function stopDgPoll() { clearInterval(dg.poll); dg.poll = null; }
+async function pollDigest() {
+  if (!current) { stopDgPoll(); return; }
+  const seq = dg.loadSeq;
+  let st;
+  try { st = await api('/digest/state?' + dgQ()); } catch { return; }
+  if (seq !== dg.loadSeq || !st.exists) return;
+  if (!dg.data) { await loadDigest(); return; }
+  dg.state = Object.assign(dg.state || {}, st);
+  if (!st.live) { stopDgPoll(); toast(st.job && st.job.state === 'done' ? '精读生成完成' : '精读生成已结束：' + (st.job?.message || '')); }
+  renderDigest();
+  repaintDigestLayers();
+}
+
+/** 段落 [s,e) 在 PDF 上的矩形（PDF 用户空间；行内按字符比例插值）。 */
+function dgRects(p, s, e) {
+  const out = [];
+  for (const sp of p.spans || []) {
+    const [a, b, page, x, y, w, h] = sp;
+    if (b <= s || a >= e) continue;
+    const len = Math.max(1, b - a);
+    const f0 = (Math.max(a, s) - a) / len, f1 = (Math.min(b, e) - a) / len;
+    out.push({ page, x: x + w * f0, y, w: Math.max(2, w * (f1 - f0)), h });
+  }
+  return out;
+}
+
+/** 唯一铺层点在 paintPage（与公式热区同一处）；数据晚到时 repaintDigestLayers 用缓存的 viewport 补铺。 */
+function paintDigestLayer(pageDiv, viewport, pageNo) {
+  if (!dgReady) return;
+  pageDiv._dgVp = viewport;
+  const old = pageDiv.querySelector('.dgLayer');
+  if (old) old.remove();
+  if ((pageDiv.dataset.doc || 'orig') !== 'orig' || zhVariant !== null || !dg.data) return;
+  const boxes = [];
+  const showHl = $('dg-showhl').checked;
+  if (showHl && dg.state && dg.state.analyses) {
+    for (const a of Object.values(dg.state.analyses)) {
+      for (const h of a.highlights || []) {
+        const p = h.range && dg.paraById.get(h.pid);
+        if (p) for (const r of dgRects(p, h.range[0], h.range[1])) if (r.page === pageNo) boxes.push(['dg-hlr', r]);
+      }
+      for (const f of a.figures || []) {
+        const p = dg.paraById.get(f.pid);
+        if (p) for (const r of dgRects(p, 0, p.text.length)) if (r.page === pageNo) boxes.push(['dg-figr', r]);
+      }
+    }
+  }
+  if (dgFocus) {
+    const p = dg.paraById.get(dgFocus.pid);
+    if (p) for (const r of dgRects(p, dgFocus.s, dgFocus.e)) if (r.page === pageNo) boxes.push(['dg-focr', r]);
+  }
+  if (!boxes.length) return;
+  const layer = document.createElement('div');
+  layer.className = 'dgLayer';
+  // PDF 用户空间 → 视口像素：直接用 viewport.transform（pdf.js 6 的 PageViewport 不再有 convertToViewportRectangle）
+  const [a, b, c, d, e, f] = viewport.transform;
+  const pt = (x, y) => [a * x + c * y + e, b * x + d * y + f];
+  for (const [cls, r] of boxes) {
+    const [x1, y1] = pt(r.x, r.y);
+    const [x2, y2] = pt(r.x + r.w, r.y + r.h);
+    const el = document.createElement('div');
+    el.className = cls;
+    el.style.left = Math.min(x1, x2) + 'px';
+    el.style.top = Math.min(y1, y2) + 'px';
+    el.style.width = Math.abs(x2 - x1) + 'px';
+    el.style.height = Math.abs(y2 - y1) + 'px';
+    layer.appendChild(el);
+  }
+  pageDiv.appendChild(layer);
+}
+function repaintDigestLayers() {
+  document.querySelectorAll('#pdf-pages .page').forEach((div) => {
+    if (!div._dgVp) return;
+    try { paintDigestLayer(div, div._dgVp, +div.dataset.page); } catch (err) { console.warn('[dpr] 精读高亮层绘制失败', err); }
+  });
+}
+
+/** 等某页出现在原文列（翻页模式直接换页），返回页节点。 */
+async function dgShowPage(p0) {
+  if (!pdfDoc) return null;
+  const p = Math.min(Math.max(1, p0 | 0), pdfDoc.numPages);
+  if (pageMode === 'paged') {
+    if (p !== curPage) { curPage = p; await rerender(); }
+    return origPageNode(p);
+  }
+  for (let i = 0; i < 100; i++) {
+    const n = origPageNode(p);
+    if (n && n._dgVp) return n;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return origPageNode(p);
+}
+
+/** 面板 → 原文：滚到段落（或其中一句）并以橙色框出。 */
+async function dgFocusRange(pid, s, e) {
+  const p = dg.paraById.get(pid);
+  if (!p) return;
+  dg.lastPanelAction = Date.now();
+  dgFocus = { pid, s: s ?? 0, e: e ?? p.text.length };
+  document.querySelectorAll('#dg-body .dg-para.focus').forEach((el) => el.classList.remove('focus'));
+  document.querySelector(`#dg-body .dg-para[data-pid="${pid}"]`)?.classList.add('focus');
+  const rects = dgRects(p, dgFocus.s, dgFocus.e);
+  const page = rects.length ? rects[0].page : p.page;
+  if (zhVariant !== null) {
+    toast('当前是译文视图：切回原文才能看到位置标记');
+    jumpTo(page);
+    return;
+  }
+  const node = await dgShowPage(page);
+  repaintDigestLayers();
+  // 瞬时跳转（不用 smooth）：平滑滚动依赖 rAF，iframe/标签页不在前台时会停在半路
+  const box = node?.querySelector('.dgLayer .dg-focr');
+  if (box) box.scrollIntoView({ block: 'center' });
+  else if (node) node.scrollIntoView({ block: 'start' });
+}
+
+/** 原文 → 面板：当前页变化时，把面板滚到这一页的第一个段落（或它所在的节）。 */
+let dgFollowTimer = 0;
+function dgFollow() {
+  if (!dgReady || !dgOpen() || !dg.data || !$('dg-follow').checked) return;
+  if (Date.now() - dg.lastPanelAction < 2500) return; // 刚从面板点过：别把面板拉走
+  clearTimeout(dgFollowTimer);
+  dgFollowTimer = setTimeout(() => {
+    const p = dg.data.doc.paragraphs.find((x) => x.page >= curPage);
+    if (!p) return;
+    let el = document.querySelector(`#dg-body [data-pid="${p.id}"]`);
+    if (!el) {
+      const sec = dgSectionOf(p.id);
+      el = sec && document.querySelector(`#dg-body .dg-sec[data-sec="${sec.id}"]`);
+    }
+    if (!el) return;
+    const body = $('dg-body');
+    const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top;
+    if (top < 0 || top > body.clientHeight * 0.6) body.scrollTo({ top: body.scrollTop + top - 8, behavior: 'smooth' });
+  }, 250);
+}
+
+const dgNum = (pid) => +String(pid).slice(1);
+function dgSectionOf(pid) {
+  const n = dgNum(pid);
+  return dg.state?.outline?.sections.find((s) => n >= s.start && n <= s.end) || null;
+}
+function dgSectionParas(s) {
+  return dg.data.doc.paragraphs.filter((p) => dgNum(p.id) >= s.start && dgNum(p.id) <= s.end);
+}
+function dgPages(paras) {
+  if (!paras.length) return '';
+  const a = paras[0], b = paras[paras.length - 1];
+  if (a.label && b.label) return a.label === b.label ? `p.${a.label}` : `p.${a.label}–${b.label}`;
+  return a.page === b.page ? `PDF 第 ${a.page} 页` : `PDF 第 ${a.page}–${b.page} 页`;
+}
+function dgSectionDone(s) {
+  const st = dg.state;
+  if (!st.analyses[s.id]) return false;
+  if (!st.needsTranslation) return true;
+  return dgSectionParas(s).every((p) => st.translations[p.id]);
+}
+function dgComplete() {
+  const st = dg.state;
+  return !!(st && st.outline && st.outline.sections.every(dgSectionDone) && st.overview);
+}
+
+function renderDgHead() {
+  const st = dg.state;
+  const live = !!(st && st.live);
+  const job = st && st.job;
+  // 顶部提示行只在「有事要说」时出现：生成中 / 出错 / 没生成完；完成后整行消失
+  let status = '', gen = '', canStop = false;
+  if (dg.error) status = '精读数据读取失败：' + dg.error;
+  else if (!dg.data) status = '';
+  else if (live) { status = `生成中 ${job.done}/${job.total || '?'} · ${job.message || ''}`; canStop = true; }
+  else if (job && job.state === 'error') { status = '生成出错：' + (job.message || ''); gen = '重试'; }
+  else if (st && st.outline && !dgComplete()) {
+    const n = st.outline.sections.filter(dgSectionDone).length;
+    status = `已生成 ${n}/${st.outline.sections.length} 节` + (job && job.state === 'stopped' ? '（已停止）' : '');
+    gen = '生成剩余全部';
+  }
+  $('dg-status').textContent = status;
+  $('dg-status').title = status;
+  $('dg-gen').style.display = gen ? '' : 'none';
+  $('dg-gen').textContent = gen || '生成精读';
+  $('dg-stop').style.display = canStop ? '' : 'none';
+  $('dg-regen').disabled = !dg.data || live;
+  $('dg-progress').style.display = live ? 'block' : 'none';
+  $('dg-bar').style.width = live && job.total ? Math.round(job.done / job.total * 100) + '%' : '0';
+  document.querySelectorAll('#dg-tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === dg.tab));
+}
+
+function renderDigest() {
+  renderDgHead();
+  $('dg-panel').classList.toggle('chat', dg.tab === 'ch');
+  if (!dgOpen()) return;
+  if (dg.tab === 'ch') { chEnsure(); return; }
+  const st = dg.state;
+  const key = [dg.tab, current && current.name, !!dg.data, dg.error, st && st.outline && st.outline.sections.length,
+    st && Object.keys(st.translations).length, st && Object.keys(st.analyses).length, st && !!st.overview,
+    st && st.live, st && st.job && st.job.errors.length, $('dg-showorig').checked].join('|');
+  if (key === dg.renderKey) return;
+  dg.renderKey = key;
+  const body = $('dg-body');
+  const keep = body.scrollTop;
+  body.classList.toggle('show-orig', $('dg-showorig').checked);
+  body.innerHTML = dgBodyHtml();
+  body.scrollTop = keep;
+  if (dgFocus) document.querySelector(`#dg-body .dg-para[data-pid="${dgFocus.pid}"]`)?.classList.add('focus');
+  for (const pid of dg.openPids) document.querySelector(`#dg-body .dg-para[data-pid="${pid}"]`)?.classList.add('open');
+}
+
+function dgBodyHtml() {
+  if (!current) return '<div class="dg-empty">先从文献库选一篇文献。</div>';
+  if (dg.error) return `<div class="dg-empty">精读数据读取失败：${dgEsc(dg.error)}</div>`;
+  const st = dg.state;
+  if (!dg.data) {
+    const pages = pdfDoc ? pdfDoc.numPages : 0;
+    const long = pages > 40;
+    return `<div class="dg-empty">
+      精读会先把文献切成大节，再用<b>子代理并行</b>生成：<br>
+      · <b>逐段翻译</b>：每个段落的中文译文，点段落可在左侧原文定位；<br>
+      · <b>概括·总结·点评</b>：每节的概括、要点总结与批判点评，外加全文总览；<br>
+      · <b>高中生版</b>：用高中生听得懂的话讲解每个大节；<br>
+      · <b>重点</b>：原文中最重要的句子与图表，会在左侧原文上用青绿色标出。<br>
+      生成在后台进行，可以继续阅读；结果保存在文献旁的 <code>.digest.json</code>，下次打开直接显示。
+      ${long ? `<br><br>这份文献有 ${pages} 页，全部生成会消耗较多模型额度，建议先分节、再挑章节生成。` : ''}
+      <div>${long ? '<button class="dg-btn primary" data-gen="outline">先分节</button><button class="dg-btn" data-gen="all">全部生成</button>'
+        : '<button class="dg-btn primary" data-gen="all">生成精读</button>'}</div>
+    </div>`;
+  }
+  if (!st.outline) {
+    return `<div class="dg-empty">${st.live ? '正在划分章节…（已抽取 ' + dg.data.doc.paragraphs.length + ' 个段落）' : '还没有分节结果。点上方「生成精读」开始。'}</div>` + dgErrorsHtml();
+  }
+  let html = dgErrorsHtml();
+  if (dg.tab === 'an' && st.overview) {
+    const o = st.overview;
+    html += `<div class="dg-card dg-overview"><h4>全文总览 · 《${dgEsc(st.outline.title)}》</h4>
+      <p><b>${dgEsc(o.oneLine)}</b></p><p>${dgEsc(o.summary)}</p>
+      <h4>批判点评</h4><p>${dgEsc(o.critique)}</p>
+      <h4>阅读建议</h4><p>${dgEsc(o.readingAdvice)}</p></div>`;
+  }
+  if (dg.tab === 'tr' && !st.needsTranslation) html += '<div class="dg-empty">原文主要是中文，不需要翻译；下面直接列出原文段落。</div>';
+  for (const s of st.outline.sections) html += dgSectionHtml(s);
+  return html;
+}
+
+function dgErrorsHtml() {
+  const errs = dg.state && dg.state.job && dg.state.job.errors;
+  if (!errs || !errs.length) return '';
+  return `<details class="dg-errs"><summary>${errs.length} 个子任务失败（点击展开；可再点「生成剩余全部」补齐）</summary>${errs.map((e) => '<div>· ' + dgEsc(e) + '</div>').join('')}</details>`;
+}
+
+function dgSectionHtml(s) {
+  const st = dg.state;
+  const paras = dgSectionParas(s);
+  const a = st.analyses[s.id];
+  const done = dgSectionDone(s);
+  // 已完成的节不挂标签（常态无需提示）；只标出「生成中 / 未生成」
+  const chip = done ? '' : st.live ? '<span class="dg-chip run">生成中…</span>' : '<span class="dg-chip">未生成</span>';
+  const genBtn = !done && !st.live ? `<button class="dg-link" data-gen-sec="${s.id}">生成本节</button>` : '';
+  let inner = '';
+  if (dg.tab === 'tr') {
+    for (const p of paras) {
+      const zh = st.needsTranslation ? st.translations[p.id] : p.text;
+      const cls = 'dg-para' + (p.kind === 'heading' ? ' heading' : '');
+      const tag = p.kind === 'caption' || p.kind === 'figure' ? '<span class="dg-meta">［图表说明］</span> ' : p.kind === 'note' ? '<span class="dg-meta">［注］</span> ' : '';
+      inner += `<div class="${cls}" data-pid="${p.id}">${tag}<span class="dg-zh${zh ? '' : ' pending'}">${zh ? dgEsc(zh) : '（待翻译）'}</span>
+        ${st.needsTranslation ? `<div class="dg-orig">${dgEsc(p.text)}</div>` : ''}</div>`;
+    }
+  } else if (!a) {
+    inner = '<div class="dg-meta">（本节尚未分析）</div>';
+  } else if (dg.tab === 'an') {
+    inner = `<div class="dg-card"><h4>概括</h4><p>${dgEsc(a.summary)}</p>
+      <h4>总结</h4><ul>${a.keyPoints.map((k) => '<li>' + dgEsc(k) + '</li>').join('')}</ul>
+      <h4 style="margin-top:6px">批判点评</h4><p>${dgEsc(a.critique)}</p></div>`;
+  } else if (dg.tab === 'hs') {
+    inner = `<div class="dg-card"><p>${dgEsc(a.eli5)}</p></div>`;
+  } else if (dg.tab === 'hl') {
+    inner = (a.highlights || []).map((h, i) => `<button class="dg-hl-item" data-hl="${s.id}:${i}">
+        <q>${dgEsc(h.quote)}</q><span class="why">${dgEsc(h.why)}${h.range ? '' : '（未能在原文中精确定位）'}</span></button>`).join('')
+      + (a.figures || []).map((f) => {
+        const p = dg.paraById.get(f.pid);
+        return `<button class="dg-hl-item fig" data-fig="${f.pid}"><span class="dg-meta">重要图表</span><q>${dgEsc(p ? p.text.slice(0, 160) : f.pid)}</q><span class="why">${dgEsc(f.why)}</span></button>`;
+      }).join('')
+      || '<div class="dg-meta">（本节没有标出重点）</div>';
+  }
+  return `<section class="dg-sec" data-sec="${s.id}"><div class="dg-sec-h"><h3>${dgEsc(s.title)}</h3>
+    <span class="dg-pages">${dgPages(paras)}</span>${chip}${genBtn}</div>${inner}</section>`;
+}
+
+async function startDigest(scope, force) {
+  if (!current) return;
+  const btns = ['dg-gen', 'dg-regen'].map($);
+  btns.forEach((b) => { b.disabled = true; });
+  try {
+    const r = await api('/digest/start', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ topic: current.topic, name: current.name, scope, force: !!force }),
+    });
+    toast(`已开始生成（${r.paragraphs} 个段落）。子代理在后台运行，可以继续阅读。`, 4000);
+    await loadDigest();
+  } catch (e) {
+    toast('无法开始生成：' + e.message, 6000);
+  } finally {
+    btns.forEach((b) => { b.disabled = false; });
+  }
+}
+
+function setDgOpen(open) {
+  $('main').classList.toggle('dg-on', open);
+  $('dg-toggle').classList.toggle('active', open);
+  localStorage.setItem('dpr.dgOpen', open ? '1' : '');
+  applyDgWidth();
+  if (open) { dg.renderKey = ''; renderDigest(); }
+  if (fitMode && pdfDoc) fitToWidth(); // PDF 列变窄/变宽：适宽模式下重算缩放
+}
+function applyDgWidth() {
+  const mainW = $('main').clientWidth || window.innerWidth;
+  // 没拖过就按当前宽度的 45% 算（每次 resize 重算）；拖过就用记住的像素宽，但始终给 PDF 列留 200px
+  const saved = +localStorage.getItem('dpr.dgWidth') || Math.round(mainW * 0.45);
+  $('dg-panel').style.width = Math.max(Math.min(300, mainW - 200), Math.min(saved, mainW - 200)) + 'px';
+}
+window.addEventListener('resize', () => {
+  if (!dgReady || !dgOpen()) return;
+  const before = $('dg-panel').style.width;
+  applyDgWidth();
+  // 既有的 resize 处理已按旧面板宽度适宽过；面板宽度真的变了才补一次（避免每次 resize 都双重渲染）
+  if ($('dg-panel').style.width !== before && fitMode && pdfDoc) fitToWidth();
+});
+
+$('dg-toggle').onclick = () => setDgOpen(!dgOpen());
+$('dg-gen').onclick = () => startDigest('all', false);
+// 二次确认用「再点一次」而不是原生 confirm（桌面端 Electron 不支持原生弹窗）
+let dgRegenArmed = 0;
+$('dg-regen').onclick = () => {
+  const b = $('dg-regen');
+  if (Date.now() - dgRegenArmed > 4000) {
+    dgRegenArmed = Date.now();
+    b.textContent = '再点一次：清掉已有结果并全部重新生成';
+    setTimeout(() => { if (Date.now() - dgRegenArmed >= 4000) b.textContent = '全部重新生成…'; }, 4100);
+    return;
+  }
+  dgRegenArmed = 0;
+  b.textContent = '全部重新生成…';
+  $('dg-opts').classList.remove('on');
+  $('dg-more').classList.remove('on');
+  startDigest('all', true);
+};
+$('dg-stop').onclick = async () => {
+  if (!current) return;
+  try {
+    await api('/digest/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ topic: current.topic, name: current.name }) });
+    toast('已请求停止：正在运行的子任务完成后停下');
+  } catch (e) { toast('停止失败：' + e.message); }
+};
+$('dg-tabs').onclick = (e) => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) dgSetTab(b.dataset.tab);
+};
+$('dg-more').onclick = (e) => {
+  e.stopPropagation();
+  const on = !$('dg-opts').classList.contains('on');
+  $('dg-opts').classList.toggle('on', on);
+  $('dg-more').classList.toggle('on', on);
+};
+document.addEventListener('click', (e) => {
+  if (!e.target.closest || e.target.closest('#dg-opts') || e.target.closest('#dg-more')) return;
+  $('dg-opts').classList.remove('on');
+  $('dg-more').classList.remove('on');
+});
+$('dg-showhl').onchange = () => repaintDigestLayers();
+$('dg-showorig').onchange = () => { localStorage.setItem('dpr.dgShowOrig', $('dg-showorig').checked ? '1' : ''); renderDigest(); };
+$('dg-showorig').checked = localStorage.getItem('dpr.dgShowOrig') === '1';
+$('dg-body').onclick = (e) => {
+  const gen = e.target.closest('[data-gen]');
+  if (gen) { startDigest(gen.dataset.gen === 'outline' ? [] : 'all', false); return; }
+  const sec = e.target.closest('[data-gen-sec]');
+  if (sec) { startDigest([sec.dataset.genSec], false); return; }
+  const hl = e.target.closest('[data-hl]');
+  if (hl) {
+    const [sid, i] = hl.dataset.hl.split(':');
+    const h = dg.state.analyses[sid]?.highlights[+i];
+    if (h) dgFocusRange(h.pid, h.range ? h.range[0] : 0, h.range ? h.range[1] : undefined);
+    return;
+  }
+  const fig = e.target.closest('[data-fig]');
+  if (fig) { dgFocusRange(fig.dataset.fig); return; }
+  const para = e.target.closest('.dg-para');
+  if (para) {
+    // 再点一次同一段：展开/收起原文
+    if (dgFocus && dgFocus.pid === para.dataset.pid && para.classList.contains('focus')) {
+      para.classList.toggle('open');
+      if (para.classList.contains('open')) dg.openPids.add(para.dataset.pid); else dg.openPids.delete(para.dataset.pid);
+      return;
+    }
+    dgFocusRange(para.dataset.pid);
+  }
+};
+// 宽度拖拽
+$('dg-resizer').onmousedown = (e) => {
+  e.preventDefault();
+  const rz = $('dg-resizer');
+  rz.classList.add('drag');
+  const right = $('main').getBoundingClientRect().right;
+  const move = (ev) => {
+    const w = Math.max(300, Math.min(right - ev.clientX, $('main').clientWidth - 240));
+    $('dg-panel').style.width = w + 'px';
+  };
+  const up = () => {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    rz.classList.remove('drag');
+    localStorage.setItem('dpr.dgWidth', String(parseInt($('dg-panel').style.width, 10) || ''));
+    if (fitMode && pdfDoc) fitToWidth();
+  };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+};
+
+/* ---------- 「对话」标签：跟随同一个伴读会话（/api/session/follow 的 SSE），发送走 /api/ask ----------
+   只显示用户真正发的话（source.kind === 'user'）和助手回复；运行时上下文、技能目录等注入不显示。
+   回答里的阅读器链接（…&page=N&q=…）点了直接在左侧原文跳页并高亮。 */
+const ch = { es: null, key: '', n: null, msgs: [], stream: '', busy: false, fresh: false, seen: new Set(), raf: 0 };
+const chDocked = () => (localStorage.getItem('dpr.chatDock') ?? 'panel') === 'panel';
+
+function chDisconnect() {
+  if (ch.es) { try { ch.es.close(); } catch { /* 已关 */ } }
+  ch.es = null;
+  ch.key = '';
+}
+function chConnect(n) {
+  chDisconnect();
+  ch.msgs = []; ch.stream = ''; ch.busy = false; ch.seen = new Set(); ch.fresh = false;
+  if (!current || typeof EventSource !== 'function') { chRender(); return; }
+  ch.key = current.topic + '/' + current.name;
+  const es = new EventSource('/paper-reader/api/session/follow?' + dgQ() + (n ? '&n=' + n : ''));
+  ch.es = es;
+  es.addEventListener('meta', (e) => { try { ch.n = JSON.parse(e.data).n; chRenderHead(); } catch { /* 忽略 */ } });
+  es.onmessage = (e) => { let f; try { f = JSON.parse(e.data); } catch { return; } chFrame(f); };
+  chRender();
+}
+/** 标签可见时确保连着当前论文的会话（换论文后自动重连）。 */
+function chEnsure() {
+  if (!current) return;
+  const key = current.topic + '/' + current.name;
+  if (!ch.fresh && (!ch.es || ch.key !== key)) chConnect(ch.key === key ? ch.n : null);
+  else chRender();
+}
+function chFrame(f) {
+  if (f.type === 'snapshot') { for (const r of f.records || []) if (r.type === 'event') chEvent(r.event); }
+  else if (f.type === 'event') chEvent(f.event);
+  else if (f.type === 'assistant-stream' && f.frame) {
+    const fr = f.frame;
+    if (fr.type === 'start') ch.stream = '';
+    else if (fr.type === 'chunk' && fr.chunk && fr.chunk.type === 'text-delta') ch.stream += fr.chunk.text || '';
+    else if (fr.type === 'end') ch.stream = '';
+  }
+  chSchedule();
+}
+function chEvent(e) {
+  if (!e || ch.seen.has(e.seq)) return;   // SSE 重连会重发快照：按 seq 去重
+  ch.seen.add(e.seq);
+  const d = e.data || {};
+  if (e.type === 'user/message' && d.source && d.source.kind === 'user') {
+    const text = (d.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+    ch.msgs.push(Object.assign({ role: 'user' }, chParseUser(text)));
+  } else if (e.type === 'assistant/message') {
+    const blocks = (d.message && d.message.content) || [];
+    const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
+    const tools = blocks.filter((b) => b.type !== 'text' && b.type !== 'thinking' && (b.name || b.toolName)).map((b) => b.name || b.toolName);
+    if (text || tools.length) ch.msgs.push({ role: 'assistant', text, tools });
+  } else if (e.type === 'turn/start') ch.busy = true;
+  else if (e.type === 'turn/end') { ch.busy = false; ch.stream = ''; }
+}
+/** /api/ask 拼的提示词还原成用户看到的样子：去掉「[论文伴读] 文献：…」行，选中段落单独作引用。 */
+function chParseUser(text) {
+  let t = text.replace(/^\[论文伴读\][^\n]*\n?/, '');
+  let quote = '';
+  const m = /^用户在阅读器里(?:选中了一段文字|引用了[^\n]*公式)[^\n]*\n"""([\s\S]*?)"""\n?/.exec(t);
+  if (m) { quote = m[1]; t = t.slice(m[0].length); }
+  t = t.replace(/^用户的问题：/, '');
+  return { quote, text: t.trim() };
+}
+/** 轻量 markdown：转义后处理链接 / 粗体 / 行内代码 / 列表 / 换行。阅读器链接改成原地跳页。 */
+function chMd(src) {
+  let h = esc(String(src || ''));
+  h = h.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+    const u = url.replace(/&amp;/g, '&');
+    const page = /[?&]page=(\d+)/.exec(u);
+    if (page) {
+      const q = /[?&]q=([^&]+)/.exec(u);
+      return `<a href="#" data-jump-page="${page[1]}" data-jump-q="${q ? esc(q[1]) : ''}">${label}</a>`;
+    }
+    return /^https?:\/\//.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener">${label}</a>` : label;
+  });
+  h = h.replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  h = h.replace(/^#{1,6}\s+(.+)$/gm, '<b>$1</b>').replace(/^\s*[-*]\s+/gm, '• ');
+  return h.replace(/\n/g, '<br>');
+}
+function chSchedule() {
+  if (ch.raf) return;
+  ch.raf = setTimeout(() => { ch.raf = 0; chRender(); }, 60);
+}
+function chRenderHead() {
+  $('ch-title').textContent = ch.fresh ? '新对话（发送第一条消息后创建）' : ch.n ? `伴读会话 ${ch.n}` : '伴读会话';
+}
+function chRender() {
+  chRenderHead();
+  if (!dgOpen() || dg.tab !== 'ch') return;
+  const list = $('ch-list');
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  let html = '';
+  if (!current) html = '<div class="ch-empty">先从文献库选一篇文献。</div>';
+  else if (!ch.msgs.length && !ch.stream && !ch.busy) {
+    html = `<div class="ch-empty">${ch.fresh ? '新对话：' : ''}直接提问，或在左侧原文里选中一段文字点「提问」。回答里的页码可以点，会在原文里跳转并高亮。</div>`;
+  }
+  for (const m of ch.msgs) {
+    if (m.role === 'user') {
+      html += `<div class="ch-msg user">${m.quote ? `<div class="ch-quote">${esc(m.quote)}</div>` : ''}${dgEsc(m.text)}</div>`;
+    } else {
+      const tools = m.tools && m.tools.length ? `<div class="ch-tools">🔧 ${m.tools.map(esc).join(' · ')}</div>` : '';
+      html += `<div class="ch-msg assistant">${tools}${m.text ? `<div class="ch-text">${chMd(m.text)}</div>` : ''}</div>`;
+    }
+  }
+  if (ch.stream) html += `<div class="ch-msg assistant"><div class="ch-text">${chMd(ch.stream)}</div></div>`;
+  else if (ch.busy) html += '<div class="ch-busy">思考中…</div>';
+  list.innerHTML = html;
+  if (atBottom) list.scrollTop = list.scrollHeight;
+}
+async function chSend() {
+  const q = $('ch-input').value.trim();
+  if (!q || !current) return;
+  $('ch-send').disabled = true;
+  try {
+    const body = Object.assign({}, current, { question: q }, ch.fresh ? { fresh: true } : ch.n ? { n: ch.n } : {});
+    const r = await api('/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    $('ch-input').value = '';
+    if (ch.fresh || r.n !== ch.n || !ch.es) chConnect(r.n);
+  } catch (e) {
+    toast('发送失败：' + e.message, 5000);
+  } finally {
+    $('ch-send').disabled = false;
+  }
+}
+/** 划词提问发出后：切到「对话」标签看回答（对话收在面板里时尤其需要，否则回答没地方显示）。 */
+function dgAfterAsk(n) {
+  if (!dgReady || !current) return;
+  if (!chDocked() && !dgOpen()) return;   // 用原生对话栏、且面板没开：回答本来就在右侧
+  if (!dgOpen()) setDgOpen(true);
+  dgSetTab('ch');
+  if (ch.n !== n || !ch.es) chConnect(n);
+}
+function dgSetTab(t) {
+  dg.tab = t;
+  localStorage.setItem('dpr.dgTab', t);
+  $('dg-body').scrollTop = 0;
+  renderDigest();
+}
+$('ch-send').onclick = chSend;
+$('ch-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); chSend(); }
+});
+$('ch-new').onclick = () => { chDisconnect(); ch.fresh = true; ch.msgs = []; ch.stream = ''; ch.busy = false; chRender(); $('ch-input').focus(); };
+$('ch-list').onclick = (e) => {
+  const a = e.target.closest && e.target.closest('a[data-jump-page]');
+  if (!a) return;
+  e.preventDefault();
+  let q = a.dataset.jumpQ || '';
+  try { q = decodeURIComponent(q); } catch { /* 原样用 */ }
+  jumpTo(+a.dataset.jumpPage, q || undefined);
+};
+$('chat-dock').classList.toggle('active', chDocked());
+$('chat-dock').onclick = () => {
+  const on = !chDocked();
+  localStorage.setItem('dpr.chatDock', on ? 'panel' : 'native');
+  $('chat-dock').classList.toggle('active', on);
+  if (on) { setDgOpen(true); dgSetTab('ch'); }
+  toast(on ? '对话已收进精读面板的「对话」标签' : '已恢复右侧原生对话栏');
+};
+dgReady = true;
+// 对话默认收在面板里：从没开关过面板的用户首次进来就打开它，不然对话无处可见
+if (localStorage.getItem('dpr.dgOpen') === '1' || (localStorage.getItem('dpr.dgOpen') === null && chDocked())) setDgOpen(true);
+renderDgHead();
 
 /* ================= 启动：URL 参数 > localStorage > 第一篇 ================= */
 async function bootstrap() {

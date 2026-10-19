@@ -81,6 +81,8 @@ import {
   writeMineruConfig,
 } from './mineru-config.ts'
 import { installPaperPreset, PAPER_PRESET_ID } from './preset.ts'
+import { extractDigestDoc } from './digest-extract.ts'
+import { jobIsLive, newDigest, readDigest, updateDigest, writeDigest, type DigestFile, type DigestJob } from './digest.ts'
 import { noteOrigin } from './origin.ts'
 
 type Req = import('node:http').IncomingMessage
@@ -195,6 +197,8 @@ export function registerRoutes(ctx: Context, config: PluginConfig) {
   // 自带「论文伴读」agent preset → $DSH_HOME/.agent-presets/（实时扫描，免重启）；
   // 失败（旧版 dsh/无权限）则回退默认 preset，功能不受影响。
   const presetDir = installPaperPreset(new URL('../', import.meta.url))
+  // 精读编排会话的 agent preset：在本包 cordis.patch.yml 里声明（dsh 0.2 的注册表只认 bundle patch 行）
+  const DIGEST_PRESET_ID = 'paper-digest'
 
   const locate = (url: URL) => {
     const path = url.searchParams.get('path') ?? undefined
@@ -212,6 +216,13 @@ export function registerRoutes(ctx: Context, config: PluginConfig) {
       throw notFound(args.path ? '文献不存在（path 指向的文件不可用）' : `文献不存在：${args.topic ? `${args.topic}/` : ''}${args.name ?? ''}`)
     }
   }
+
+  /** PDF 指纹：换了文件（大小或修改时间变化）精读就整体作废重抽。 */
+  const pdfKeyOf = async (ref: PaperRef) => {
+    const st = await stat(ref.pdfPath)
+    return `${st.size}:${Math.floor(st.mtimeMs)}`
+  }
+  const digestFresh = async (ref: PaperRef, d: DigestFile) => d.pdfKey === (await pdfKeyOf(ref))
 
   /** 每篇文献的伴读会话 id（确定性，重启/刷新后可续）；n 支持同文献多会话（会话1/2/…）。 */
   const sessionPrefixFor = (ref: { topic: string; name: string }) =>
@@ -471,7 +482,9 @@ export function registerRoutes(ctx: Context, config: PluginConfig) {
       }
       const mime: Record<string, string> = { '.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css', '.map': 'application/json',
         // 字体（vendored KaTeX 的 woff2 就靠这条；不给对 MIME 时某些浏览器会拒绝 @font-face）
-        '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' }
+        '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf',
+        // pdf.js 的图像解码 wasm（JBIG2/JPX/ICC）：必须是 application/wasm，否则 instantiateStreaming 拒收
+        '.wasm': 'application/wasm' }
       try {
         const body = await readFile(new URL(name, readerVendorDir))
         const ext = name.slice(name.lastIndexOf('.'))
@@ -1420,6 +1433,102 @@ export function registerRoutes(ctx: Context, config: PluginConfig) {
         requestId: randomUUID(),
       }, AbortSignal.timeout(30_000))
       json(res, 200, { ok: true, sessionId, n })
+      return
+    }
+
+    // ── 精读（逐段翻译 / 分节点评 / 高中生版 / 重点句）─────────────────────────
+    // 数据全在 <文献>.digest.json：GET /api/digest 给全量（含段落与坐标，阅读器打开时取一次），
+    // GET /api/digest/state 只给结果与任务进度（生成期间轮询），POST start/stop 控制任务。
+    if (sub === '/api/digest' && req.method === 'GET') {
+      const ref = locate(url)
+      const d = await readDigest(ref)
+      json(res, 200, d ? { exists: true, stale: !(await digestFresh(ref, d)), live: jobIsLive(d.job), ...d } : { exists: false })
+      return
+    }
+
+    if (sub === '/api/digest/state' && req.method === 'GET') {
+      const ref = locate(url)
+      const d = await readDigest(ref)
+      if (!d) { json(res, 200, { exists: false }); return }
+      const live = jobIsLive(d.job)
+      // 任务已结束：顺手归档编排会话（日志保留；精读结果在 .digest.json，会话本身对用户没有用处）
+      if (!live && d.job?.sessionId && workspaceRegistry && !(workspaceRegistry.archivedSessionIds ?? []).includes(d.job.sessionId)) {
+        workspaceRegistry.archiveSession(d.job.sessionId).catch(() => {})
+      }
+      json(res, 200, {
+        exists: true,
+        live,
+        outline: d.outline,
+        analyses: d.analyses,
+        translations: d.translations,
+        overview: d.overview,
+        needsTranslation: d.needsTranslation,
+        job: d.job,
+      })
+      return
+    }
+
+    if (sub === '/api/digest/start' && req.method === 'POST') {
+      const body = (await readBody(req)) as { topic?: string; name?: string; path?: string; scope?: unknown; force?: boolean; reextract?: boolean }
+      let ref: PaperRef
+      try {
+        ref = locateForWrite(body)
+      } catch (err) {
+        if (manageFail(res, err)) return
+        throw err
+      }
+      const scope: DigestJob['scope'] = Array.isArray(body.scope) ? body.scope.filter((x): x is string => typeof x === 'string') : 'all'
+      let d = await readDigest(ref)
+      if (d && jobIsLive(d.job)) {
+        json(res, 409, { error: '这篇文献的精读正在生成中', code: 'busy', job: d.job })
+        return
+      }
+      if (!d || body.reextract || !(await digestFresh(ref, d))) {
+        const doc = await extractDigestDoc(ref.pdfPath, ref.mineruJsonPath)
+        if (!doc.paragraphs.length) {
+          json(res, 400, { error: '没有从 PDF 里抽取到任何正文段落' })
+          return
+        }
+        d = newDigest(doc, await pdfKeyOf(ref))
+      }
+      const stamp = new Date().toISOString()
+      const job: DigestJob = {
+        id: randomUUID(), state: 'queued', scope, force: body.force === true, sessionId: null,
+        startedAt: stamp, updatedAt: stamp, done: 0, total: 0, message: '排队中', errors: [],
+      }
+      d.job = job
+      await writeDigest(ref, d)
+      // 编排会话：每次任务一个新会话（避免上一轮的上下文干扰）；挂专题工作区 + 精读编排 preset
+      const sessionId = `dpd-${Buffer.from(`${ref.topic}/${ref.name}`).toString('base64url')}-${Date.now()}`
+      try {
+        const workspaceId = await ensureTopicWorkspace(ref.topic)
+        await sessionController.create(workspaceId
+          ? { sessionId, workspaceId, agentPreset: DIGEST_PRESET_ID }
+          : { sessionId, cwd: join(dataDir, ref.topic), agentPreset: DIGEST_PRESET_ID })
+        await sessionController.prompt({
+          sessionId,
+          content: [{ type: 'text', text: `job_id=${job.id}\npdf_path=${ref.pdfPath}` }],
+          requestId: randomUUID(),
+        }, AbortSignal.timeout(30_000))
+      } catch (err) {
+        await updateDigest(ref, (x) => { if (x.job?.id === job.id) { x.job.state = 'error'; x.job.message = '无法启动编排会话：' + readableError(err) } })
+        throw err
+      }
+      await updateDigest(ref, (x) => { if (x.job?.id === job.id) x.job.sessionId = sessionId })
+      json(res, 200, { ok: true, job: { ...job, sessionId }, paragraphs: d.doc.paragraphs.length })
+      return
+    }
+
+    if (sub === '/api/digest/stop' && req.method === 'POST') {
+      const body = (await readBody(req)) as { topic?: string; name?: string; path?: string }
+      const ref = locateForWrite(body)
+      const job = await updateDigest(ref, (x) => {
+        if (!x.job) return null
+        if (jobIsLive(x.job)) x.job.stopRequested = true
+        else if (x.job.state === 'queued' || x.job.state === 'running') { x.job.state = 'stopped'; x.job.message = '已中断' }
+        return x.job
+      })
+      json(res, 200, { ok: true, job })
       return
     }
 

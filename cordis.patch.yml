@@ -4,6 +4,53 @@
 # id 是配置定位用的短 slug（README 里 - id: dsh-paper-reader 的示例靠它命中），
 # 与 npm 包名解耦 —— npm 上 dsh-paper-reader 已被占用，包名走 @ggboy123 作用域。
 # YAML 里 @ 开头的字符串必须加引号。
+#
+# 精读的两个 agent preset 也在这里声明：dsh 0.2 的 preset 注册表只认 bundle patch 里的
+# `@deepseek-ai/dsh-agent-preset` 行（不再扫描 $DSH_HOME/.agent-presets/ 目录）。
+# subagent 服务与 spawn provider 由 dsh-base 挂在宿主层，preset 里不重复声明。
 - insert:
     - id: dsh-paper-reader
       name: '@ggboy123/dsh-paper-reader'
+
+    # 精读编排：阅读器「生成精读」为每次任务建一个这种会话，它只调用一次 digest_generate，
+    # 工具（agent 层插件）按 src/digest-run.ts 的规划并行派发子代理。
+    - id: preset-paper-digest
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: paper-digest
+        name: （内部）精读编排
+        description: 论文伴读插件内部使用：由阅读器「生成精读」按钮发起，并行派发子代理生成逐段翻译、分节点评与高中生版讲解。不用于日常对话。
+        order: 90
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              complete: true
+              includeRuntimeContext: false
+              prefix: |
+                You are the orchestrator for the paper-reader plugin's 精读 (close-reading) generator, powered by the {{model}} model.
+                Every user message gives you a job_id and a pdf_path. Call the digest_generate tool exactly once with those two values copied verbatim, wait for it to finish, then reply with one short Chinese sentence reporting its result. Do not do the work yourself, do not call any other tool, and do not ask questions.
+          - id: digest-tool
+            name: '@ggboy123/dsh-paper-reader/digest-agent'
+            config:
+              concurrency: 4
+
+    # 精读子代理：纯写作角色，没有任何工具；结构化回传用的 structured_output
+    # 由 subagent 运行时按 outputSchema 自动注入。
+    - id: preset-paper-digest-worker
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: paper-digest-worker
+        name: （内部）精读子代理
+        description: 论文伴读插件内部使用：精读生成时的单个子任务（翻译一块段落 / 分析一节 / 写全文总览），以结构化结果回传。不用于日常对话。
+        order: 91
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              complete: true
+              includeRuntimeContext: false
+              prefix: |
+                You are a meticulous academic reader and translator working for Chinese readers, powered by the {{model}} model.
+                You receive one self-contained task (translate a block of paragraphs, analyse one section, or write a whole-document overview). The source text is given in full inside the task; you have no other tools and need none.
+                Follow the task's requirements exactly, write all prose in Simplified Chinese unless the task says to copy original text verbatim, and report the result through the structured_output tool in a single call.

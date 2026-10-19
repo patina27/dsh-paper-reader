@@ -54,7 +54,12 @@ src/
   translate-selection.ts 纯函数：划词翻译（公式保留——行内公式与 MinerU 块文本对齐还原、提示词契约、逐公式保全校验、内存 LRU）
   rerank.ts     纯函数：search_paper 语义重排（TypeSafe/Jev，无凭据时退回关键词排序）
   preset.ts     纯函数：自带 agent preset 安装到 $DSH_HOME/.agent-presets/
+  digest-extract.ts 纯函数：精读的段落抽取（pdf.js 文本层 → 逻辑页/跨页拆分 → 页眉剔除 → 段落 + 行级坐标；无文本层时取 MinerU 块）
+  digest.ts     纯函数：精读数据模型（<文献>.digest.json）、分节、任务切块、子代理提示词与输出 schema、引句模糊定位
+  digest-run.ts 纯逻辑：精读编排引擎（并发派发、重试、补译、心跳、停止；子代理派发由调用方注入）
+  digest-agent.ts agent 层插件（只在「精读编排」preset 里加载）：digest_generate 工具，经 ctx.subagents 派发子代理
 presets/paper-reader/  「论文伴读」agent preset（persona 完整提示词 + compaction）
+cordis.patch.yml       bundle patch：本插件 + 精读的两个 agent preset（paper-digest 编排 / paper-digest-worker 子代理；dsh 0.2 只认 bundle patch 里的 preset 行）
 reader/index.html      阅读器页面（pdf.js，独立于 React 宿主，iframe 承载）
 lib/client.js          浏览器半边：文献库树(sidebar.workspaces 接管) + PDF 页签 + 主面板
 ```
@@ -79,7 +84,7 @@ lib/client.js          浏览器半边：文献库树(sidebar.workspaces 接管)
 ## 数据与目录约定
 
 - 文献库默认 `~/.dsh-paper-reader/data`，可在 profile 的 `cordis.patch.yml` 改（可直指 pdfqa 的 `data/` 复用缓存）。
-- 文献产物命名：`<文献>.pdf/.txt/.pages.json/.transcript.json/.mineru.md/.mineru.json/.embeddings.json/.study.json`，译文变体 `<文献>-en.pdf/-zh.pdf/-dual.pdf`（中断残留 `.tmp-*`）。
+- 文献产物命名：`<文献>.pdf/.txt/.pages.json/.transcript.json/.mineru.md/.mineru.json/.embeddings.json/.study.json/.digest.json`，译文变体 `<文献>-en.pdf/-zh.pdf/-dual.pdf`（中断残留 `.tmp-*`）。
 - 删除 = 移入 `data/.trash/<时间戳>/`（带 manifest，可手工恢复）；路径穿越（`..`/绝对路径/符号链接逃逸）一律拒绝；中途失败自动回滚。
 
 ## 功能细节文档

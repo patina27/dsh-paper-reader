@@ -25,6 +25,7 @@ A [DeepSeek Harness (dsh)](https://github.com/deepseek-ai/deepseek-harness) plug
 - 🀄 **One-click Chinese version**: in-place original ↔ Chinese toggle; exportable translation PDFs (Chinese / bilingual); the translation engine auto-installs, zero preinstall
 - 🈯 **Selection translation (formulas preserved)** (v1.5.1): select text, click "译" (Translate) for a translation-only bubble; when the selection overlaps a formula, the garbage text-layer glyphs are replaced with the LaTeX MinerU recognized and the model is asked to keep formulas verbatim
 - 🖥️ **Bilingual side-by-side / split view** (v1.5.1): a doubled-width对照 page or a two-pane split with synchronised scrolling — switch any time, remembered per paper
+- 📖 **Close reading (parallel subagents)**: a column beside the PDF with paragraph-by-paragraph Chinese translation, per-section summary / key points / critique, a high-school-level explanation of each section, and the key sentences and figures (marked on the original); click any item to locate it in the PDF. Works on scanned books too (invisible OCR layer, two-page spreads, running heads)
 - 🗂️ **Library management**: rename/delete topics and papers; deletion goes to a recoverable trash
 - ➕ **Optional add-ons** (off by default): MinerU parsing — scanned PDFs become readable, formulas become **Click to cite a formula** and searchable; an embeddings endpoint — plain-language semantic search
 
@@ -70,7 +71,7 @@ dsh plugin --profile web add @ggboy123/dsh-paper-reader@latest   # same command 
 
 ## Library management (safety notes)
 
-- Deletion = **moved to trash** `data/.trash/` (with a manifest; move files back to recover); it handles every artifact of the paper: `<paper>.pdf`, `.txt`, `.pages.json`, `.transcript.json`, `.mineru.md`, `.mineru.json`, `.embeddings.json`, `.study.json`, plus translation variants `<paper>-en.pdf` / `-zh.pdf` / `-dual.pdf` (including leftover `.tmp-*`); chat history is not deleted. Papers with a running session or an in-flight translation are refused up front; path traversal is rejected and mid-way failures roll back — details in [docs/features_EN.md](docs/features_EN.md)
+- Deletion = **moved to trash** `data/.trash/` (with a manifest; move files back to recover); it handles every artifact of the paper: `<paper>.pdf`, `.txt`, `.pages.json`, `.transcript.json`, `.mineru.md`, `.mineru.json`, `.embeddings.json`, `.study.json`, `.digest.json`, plus translation variants `<paper>-en.pdf` / `-zh.pdf` / `-dual.pdf` (including leftover `.tmp-*`); chat history is not deleted. Papers with a running session or an in-flight translation are refused up front; path traversal is rejected and mid-way failures roll back — details in [docs/features_EN.md](docs/features_EN.md)
 
 ## Contributing
 

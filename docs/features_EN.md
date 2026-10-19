@@ -8,6 +8,7 @@ The README lists only the core capabilities; prerequisites, costs, known limitat
 - [Embedding semantic search](#embedding-semantic-search)
 - [Selection translation (formulas preserved)](#selection-translation-formulas-preserved)
 - [Bilingual split view (two modes)](#bilingual-split-view-two-modes)
+- [Close reading: per-paragraph translation, per-section critique, high-school explanation, key sentences](#close-reading-per-paragraph-translation-per-section-critique-high-school-explanation-key-sentences)
 - [Library management details](#library-management-details)
 
 ## MinerU parsing: scanned PDFs & click-to-cite formulas
@@ -79,6 +80,36 @@ Two toolbar buttons; switch any time and **click again to return to the original
 - **Synchronised scrolling**: scrolling either pane moves the other to the **same page + same in-page ratio**; whichever pane you are scrolling leads, so the two never fight each other. In paged mode (`▣`) both panes show the same page. **If the Chinese PDF has a different page count, the panes are mapped proportionally** and a one-off notice appears in the status bar.
 - **Width**: the split view needs a panel at least **640px** wide; narrower, clicking "分屏" only explains and does **not** switch. Shrinking below 640px while split falls back to the original automatically.
 - **Interaction with existing features**: while split, the left pane is the ordinary original view — **formula hotspots stay clickable** (the right pane neither participates in hit-testing nor gets a hotspot layer), the formula panel keeps working, and the "中" toggle is disabled during split (to avoid conflicting semantics). Switching to the Chinese / dual view still disables hotspots, exactly as before (the bbox only holds for original pages).
+
+## Close reading: per-paragraph translation, per-section critique, high-school explanation, key sentences
+
+**How to use**: click "精读" (Close reading) in the reader toolbar to open a column on the right (drag to resize) → "生成精读" (Generate). Four tabs:
+
+| Tab | Content | Linked to the original |
+| --- | --- | --- |
+| 逐段翻译 Translation | Chinese translation of every paragraph ("显示原文" shows the source alongside) | click a paragraph → the PDF scrolls to it and outlines it in orange; click again to expand the source |
+| 概括·点评 Summary & critique | whole-document overview (one-liner / summary / critique / reading advice) + per-section summary, key points and critique | — |
+| 高中生版 High-school | each major section explained for a smart high-school student (analogies, terms explained inline) | — |
+| 重点 Key points | 2–6 verbatim key sentences per section, plus important figures/tables | marked in teal on the PDF (distinct from the PDF's own yellow annotations); click one to locate that sentence |
+| 对话 Chat | the paper's companion session (the same session as the native chat column): ask directly or start a new chat; answers to select-to-ask questions show up here too | page links in answers jump to and highlight the passage in the PDF |
+
+**The chat column is folded into the panel by default**: while the reader is open, the native chat column gives its width to the reader and chatting happens in the panel's 对话 tab; the chat button in the toolbar brings the native column back (for session history / switching sessions). The native column also remembers the width you last dragged it to (dsh itself resets it to 45% of the window on every reload). The reader toolbar keeps only paging, zoom, fit-width, chat and close reading; everything else (Chinese version / bilingual / split / download / page mode / translation settings / formulas) lives in the "⋯" menu.
+
+**How it is generated**: paragraphs and per-line coordinates are extracted from the PDF text layer; an outline subagent splits the document into major sections; then **one analysis subagent per section + one translation subagent per ~1,100 words** run concurrently (4 by default), and a final subagent writes the whole-document overview. Subagents run in the background while you keep reading; every finished task is written to disk and shows up in the panel immediately. Results live next to the paper as `<paper>.digest.json` and load instantly next time; replacing the PDF triggers re-extraction.
+
+- Model: the current dsh default route (the one chosen on the Models page); subagents are dsh in-process subagents (`spawn`), no extra endpoint.
+- Orchestrator session: each run creates a "（内部）精读编排" session that is archived when the run ends; the preset picker shows two internal presets ("（内部）精读编排 / 精读子代理") — do not pick them for normal chats.
+- Long documents: above 40 pages the panel suggests outlining first, then "生成本节" per section, or "生成剩余全部" for everything.
+- Failure and stopping: each subtask is retried once; remaining failures are listed at the top of the panel ("生成剩余全部" fills the gaps); "停止" takes effect before the next task is dispatched.
+- Chinese-language originals skip translation; the translation tab lists the original paragraphs.
+
+**Scanned books**: scans with an invisible OCR text layer (typical of library/scanner exports) work as-is — two-page spreads are split into two book pages, running heads and page numbers are removed and reused as page labels (the panel shows book pages such as "p.76"), end-of-line hyphenation is healed, drop caps are merged, and bare roman-numeral section marks (II / III) are recognized as headings. Occasional OCR errors are handled by the subagents from context and do not break translation or sentence location (quotes are located with fuzzy anchors). The reader now ships pdf.js's JBIG2 / JPEG2000 decoders so black-and-white scans render.
+
+**Known limitations**:
+
+- Image-only scans without a text layer must be transcribed with MinerU first (see the MinerU section above); paragraphs then come from MinerU layout blocks and key sentences can only be highlighted at block level.
+- Important figures are found through caption paragraphs (starting with Figure / Table / 图 / 表), so the PDF outline marks the caption, not the image (MinerU-transcribed papers outline the image block).
+- Paragraph segmentation is heuristic (first-line indent, line spacing, heading lines). Unusual layouts (dictionary entries, poetry, mixed multi-column pages) may be split too finely; the translations themselves are unaffected.
 
 ## Library management details
 
